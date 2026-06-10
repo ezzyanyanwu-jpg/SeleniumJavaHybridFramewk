@@ -14,8 +14,19 @@ public class DriverFactory {
 
         ChromeOptions options = new ChromeOptions();
 
-        // Launch Chrome in Guest mode to avoid Google account plus password recommendations and profile-related popups
+        // Launch Chrome in Guest mode
         options.addArguments("--guest");
+
+        // HEADLESS CONTROL (CI vs LOCAL)
+        if (System.getProperty("headless") != null) {
+            options.addArguments("--headless=new");
+        }
+
+        // Required for GitHub Actions Linux runner
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1920,1080");
 
         WebDriver webDriver = new ChromeDriver(options);
 
