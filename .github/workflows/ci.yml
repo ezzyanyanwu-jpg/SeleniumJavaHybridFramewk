@@ -96,15 +96,18 @@ jobs:
           name: allure-results
           path: allure-results
 
-      - name: Generate Allure Report
+      - name: Install Allure
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip
-      
-          wget https://github.com/allure-framework/allure2/releases/latest/download/allure.tgz
-          tar -zxvf allure.tgz
-          sudo mv allure-* /opt/allure
+          sudo apt-get install -y wget tar
+          ALLURE_VERSION=2.29.0
+          wget https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz
+          tar -zxvf allure-${ALLURE_VERSION}.tgz
+          sudo mv allure-${ALLURE_VERSION} /opt/allure
           echo "/opt/allure/bin" >> $GITHUB_PATH
+
+      - name: Generate Allure Report
+        run: allure generate allure-results --clean -o allure-report
 
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
