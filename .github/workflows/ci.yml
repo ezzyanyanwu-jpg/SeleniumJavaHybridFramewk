@@ -11,9 +11,16 @@ on:
       - main
       - develop
 
-jobs:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-  # 1. BUILD JOB
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
   build:
     runs-on: ubuntu-latest
 
@@ -26,20 +33,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: maven
 
       - name: Build Project
         run: mvn clean compile
 
-
-  # 2. TEST JOB
   test:
     runs-on: ubuntu-latest
     needs: build
@@ -53,41 +51,38 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: maven
 
       - name: Run Tests
         run: mvn clean test -Dheadless=true
 
       - name: Upload Allure Results
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: target/allure-results
+          if-no-files-found: warn
 
       - name: Upload Surefire Reports
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
           path: target/surefire-reports
+          if-no-files-found: warn
 
       - name: Show logs on failure
         if: failure()
         run: cat target/surefire-reports/*.txt || true
 
-
-  # 3. DEPLOY JOB (Allure Report)
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Download Allure Results
@@ -109,8 +104,14 @@ jobs:
       - name: Generate Allure Report
         run: allure generate allure-results --clean -o allure-report
 
-      - name: Upload Allure Report
-        uses: actions/upload-artifact@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: allure-report
           path: allure-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
