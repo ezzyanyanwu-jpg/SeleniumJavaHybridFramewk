@@ -48,8 +48,3 @@ reports/
 
 # IntelliJ
 .idea/
-
-# Nested repositories / accidental project copies
-SeleniumJavaHybridFramework/
-SeleniumJavaHybridFramework1/
-SeleniumJavaHybridFrameworkDemo/
